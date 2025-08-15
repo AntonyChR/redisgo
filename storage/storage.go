@@ -2,6 +2,16 @@ package storage
 
 import "errors"
 
+
+
+func NewStorage() *Storage {
+	return &Storage{
+		data: make(map[string]string),
+		enabledRegisterOffset: false,
+		registerOffset: 0,
+	}
+}
+
 type Storage struct{
 	data map[string]string
 	enabledRegisterOffset bool
