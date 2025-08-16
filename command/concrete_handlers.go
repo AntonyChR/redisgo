@@ -7,19 +7,34 @@ import (
 	storage "redisgo/storage"
 )
 
+// PING command
 type PingHandler struct{}
 
 func (p *PingHandler) Execute(args []string, ctx *context.Context) ([]byte, error) {
 	return []byte("+PONG\r\n"), nil
 }
 
+// ECHO command
+type EchoHandler struct{}
+
+func (e *EchoHandler) Execute(args []string, ctx *context.Context) ([]byte, error) {
+	if len(args) == 0 {
+		return nil, errors.New("ECHO command requires an argument")
+	}
+	return []byte(args[0]), nil
+}
+
+// GET command
 type GetHandler struct {
 	Storage *storage.Storage
 	parser  protocol.Parser
 }
 
 func (g *GetHandler) Execute(args []string, ctx *context.Context) ([]byte, error) {
-	value, _ := g.Storage.Get(args[0])
+	value, ok := g.Storage.Get(args[0])
+	if !ok {
+		return nilResponse(), nil // Return null bulk string for non-existing key
+	}
 	encondedResp := g.parser.EncodeBulkString(value, true)
 	return []byte(encondedResp), nil
 }
@@ -39,4 +54,8 @@ func (s *SetHandler) Execute(args []string, ctx *context.Context) ([]byte, error
 
 func okResponse() []byte {
 	return []byte("+OK\r\n")
+}
+
+func nilResponse() []byte {
+	return []byte("$-1\r\n")
 }
