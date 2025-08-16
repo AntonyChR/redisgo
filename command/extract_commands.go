@@ -11,7 +11,7 @@ type Cmd struct {
 	Args []string
 }
 
-func extractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
+func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 	commands := make([]Cmd, 0)
 	for i := 0; i < len(parsedData); i++ {
 		switch strings.ToLower(parsedData[i]) {
@@ -33,7 +33,7 @@ func extractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 				return nil, fmt.Errorf("ERR wrong number of arguments for 'set' command")
 			}
 
-			args := []string{protocol.SET, parsedData[i+1], parsedData[i+2]}
+			args := []string{parsedData[i+1], parsedData[i+2]}
 
 			// check PX and EX
 			for j := i + 3; j < len(parsedData); j++ {
@@ -67,7 +67,7 @@ func extractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 			if i+1 >= len(parsedData) {
 				return nil, fmt.Errorf("ERR wrong number of arguments for 'psync' command")
 			}
-			commands = append(commands, Cmd{Name: protocol.PSYNC,Args: []string{parsedData[i+1]}})
+			commands = append(commands, Cmd{Name: protocol.PSYNC, Args: []string{parsedData[i+1]}})
 			i++
 		case protocol.WAIT:
 			if i+2 >= len(parsedData) {
