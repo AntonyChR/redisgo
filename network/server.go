@@ -4,10 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"log"
 	"net"
-	utils "redisgo/utils"
 )
 
 // server roles
@@ -23,7 +20,7 @@ type Data struct {
 
 func CreateNewServer(port string, role string, masterAddr string) (*TcpServer, error) {
 	if role != SLAVE && role != MASTER {
-		errorMsg := fmt.Sprintf("invalid role option, expected 0(master) or 1(slave) got: %d", role)
+		errorMsg := fmt.Sprintf("invalid role option, expected 0(master) or 1(slave) got: %s", role)
 		return nil, errors.New(errorMsg)
 	}
 	if role == SLAVE {
@@ -32,8 +29,6 @@ func CreateNewServer(port string, role string, masterAddr string) (*TcpServer, e
 	}
 
 	return &TcpServer{
-		Read:                 make(chan Data),
-		Write:                make(chan Data),
 		RegisterNewSlaveChan: make(chan string),
 		conn:                 make(map[string]net.Conn),
 	}, nil
@@ -41,9 +36,6 @@ func CreateNewServer(port string, role string, masterAddr string) (*TcpServer, e
 }
 
 type TcpServer struct {
-	Read                 chan Data
-	Write                chan Data
-	CloseConn            chan string
 	port                 string
 	RegisterNewSlaveChan chan string
 	conn                 map[string]net.Conn
@@ -59,22 +51,21 @@ func (s *TcpServer) Start(handleConn func(net.Conn)) error {
 
 	errChan := make(chan error, 1)
 
-	go func(){
+	go func() {
 		for {
 			conn, err := listener.Accept()
-				if err != nil {
-					errChan <- err
-					return 
-				}
+			if err != nil {
+				errChan <- err
+				return
+			}
 			go handleConn(conn)
 		}
 	}()
 
 	select {
-	case <- s.context.Done():
+	case <-s.context.Done():
 		return nil
-	case err := <- errChan:
+	case err := <-errChan:
 		return err
 	}
 }
-
