@@ -10,7 +10,7 @@ import (
 type PingHandler struct{}
 
 func (p *PingHandler) Execute(ctx *context.Context) ([]byte, error) {
-	return []byte("+PONG\r\n"), nil
+	return okResponse(), nil
 }
 
 type GetHandler struct {
@@ -35,4 +35,8 @@ func (s *SetHandler) Execute(args []string, ctx *context.Context) ([]byte, error
 	}
 	s.Storage.Set(args[0], args[1])
 	return nil, nil
+}
+
+func okResponse() []byte {
+	return []byte("+OK\r\n")
 }
