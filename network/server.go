@@ -31,6 +31,8 @@ func CreateNewServer(port string, role string, masterAddr string) (*TcpServer, e
 	return &TcpServer{
 		RegisterNewSlaveChan: make(chan string),
 		conn:                 make(map[string]net.Conn),
+		context:              context.Background(),
+		port:                 port,
 	}, nil
 
 }
