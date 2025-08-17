@@ -106,26 +106,26 @@ func TestParseData(t *testing.T) {
 }
 
 func TestEncodeData(t *testing.T) {
-	cases := []struct{
-		input []string
+	cases := []struct {
+		input    []string
 		expected string
 	}{
-		{ []string{"PING"}, "*1\r\n$4\r\nPING\r\n"},
-		{ []string{"REPLCONF","listening-port","uno" }, "*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$3\r\nuno\r\n"},
-		{ []string{"REPLCONF", "capa", "sync2"}, "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$5\r\nsync2\r\n" },
-		{ []string{"PSYNC", "?","-1"}, "*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n" },
+		{[]string{"PING"}, "*1\r\n$4\r\nPING\r\n"},
+		{[]string{"REPLCONF", "listening-port", "uno"}, "*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$3\r\nuno\r\n"},
+		{[]string{"REPLCONF", "capa", "sync2"}, "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$5\r\nsync2\r\n"},
+		{[]string{"PSYNC", "?", "-1"}, "*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n"},
 	}
 
 	parser := RedisProtocolParser{}
 
 	for i, c := range cases {
-		resp,err := parser.Econde(c.input)
+		resp, err := parser.Encode(c.input)
 
-		if err != nil{
+		if err != nil {
 			t.Errorf("Error encoding data: %s", err)
 		}
 
-		if resp != c.expected{
+		if resp != c.expected {
 			t.Errorf("error in case [%d], expected: %s, got: %v", i, c.expected, resp)
 		}
 	}
