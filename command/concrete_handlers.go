@@ -4,17 +4,18 @@ import (
 	"context"
 	"errors"
 	"redisgo/protocol"
+	"redisgo/redis"
 	storage "redisgo/storage"
 )
 
-// PING command
+// PING
 type PingHandler struct{}
 
 func (p *PingHandler) Execute(args []string, ctx *context.Context) ([]byte, error) {
 	return []byte("+PONG\r\n"), nil
 }
 
-// ECHO command
+// ECHO
 type EchoHandler struct{}
 
 func (e *EchoHandler) Execute(args []string, ctx *context.Context) ([]byte, error) {
@@ -24,10 +25,10 @@ func (e *EchoHandler) Execute(args []string, ctx *context.Context) ([]byte, erro
 	return []byte(args[0]), nil
 }
 
-// GET command
+// GET
 type GetHandler struct {
 	Storage *storage.Storage
-	parser  protocol.Parser
+	Parser  protocol.Parser
 }
 
 func (g *GetHandler) Execute(args []string, ctx *context.Context) ([]byte, error) {
@@ -35,10 +36,11 @@ func (g *GetHandler) Execute(args []string, ctx *context.Context) ([]byte, error
 	if !ok {
 		return nilResponse(), nil // Return null bulk string for non-existing key
 	}
-	encondedResp := g.parser.EncodeBulkString(value, true)
+	encondedResp := g.Parser.EncodeBulkString(value, true)
 	return []byte(encondedResp), nil
 }
 
+// SET
 type SetHandler struct {
 	Storage     *storage.Storage
 	ReplicaChan chan []byte
@@ -49,7 +51,17 @@ func (s *SetHandler) Execute(args []string, ctx *context.Context) ([]byte, error
 		return nil, errors.New("invalid key value")
 	}
 	s.Storage.Set(args[0], args[1])
+	// TODO: implement expiration logic
 	return okResponse(), nil
+}
+
+type InfoHandler struct {
+	InfoController *redis.InfoController
+}
+
+func (i *InfoHandler) Execute(args []string, ctx *context.Context) ([]byte, error) {
+	info := i.InfoController.GetFormattedInfo()
+	return []byte(info), nil
 }
 
 func okResponse() []byte {
