@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"redisgo/protocol"
-	"redisgo/redis"
 	storage "redisgo/storage"
 )
 
@@ -53,15 +52,6 @@ func (s *SetHandler) Execute(args []string, ctx *context.Context) ([]byte, error
 	s.Storage.Set(args[0], args[1])
 	// TODO: implement expiration logic
 	return okResponse(), nil
-}
-
-type InfoHandler struct {
-	InfoController *redis.InfoController
-}
-
-func (i *InfoHandler) Execute(args []string, ctx *context.Context) ([]byte, error) {
-	info := i.InfoController.GetFormattedInfo()
-	return []byte(info), nil
 }
 
 func okResponse() []byte {
