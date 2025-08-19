@@ -59,19 +59,12 @@ func (r *Redis) handleConnection(conn net.Conn) {
 		for _, c := range commands {
 			log.Printf("Received command: %s with args: %v\n", c.Name, c.Args)
 			if handler, ok := r.Handlers[c.Name]; ok {
-				resp, err := handler.Execute(c.Args, &r.Ctx)
+				err := handler.Execute(c.Args, &r.Ctx, conn)
 				if err != nil {
 					log.Println("error executing command, ", err)
 					return
 				}
 
-				if len(resp) > 0 {
-					_, err = conn.Write(resp)
-					if err != nil {
-						log.Println("error writing response, ", err)
-						return
-					}
-				}
 			} else {
 				log.Printf("Unknown command: %s\n", c.Name)
 				conn.Write([]byte("-ERR unknown command '" + c.Name + "'\r\n"))
