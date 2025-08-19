@@ -4,7 +4,8 @@ import "sync"
 
 func NewStorage() *Storage {
 	return &Storage{
-		data:                  make(map[string]string),
+		keyValueData:          make(map[string]string),
+		keyListData:           make(map[string][]string),
 		enabledRegisterOffset: false,
 		registerOffset:        0,
 	}
@@ -12,7 +13,8 @@ func NewStorage() *Storage {
 
 type Storage struct {
 	mu                    sync.RWMutex
-	data                  map[string]string
+	keyValueData          map[string]string
+	keyListData           map[string][]string
 	enabledRegisterOffset bool
 	registerOffset        int
 }
@@ -20,7 +22,7 @@ type Storage struct {
 func (s *Storage) Get(key string) (value string, exists bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	value, ok := s.data[key]
+	value, ok := s.keyValueData[key]
 	if !ok {
 		return "", false
 	}
@@ -31,11 +33,17 @@ func (s *Storage) Get(key string) (value string, exists bool) {
 func (s *Storage) Set(key, value string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.data[key] = value
+	s.keyValueData[key] = value
+}
+
+func (s *Storage) SetValueToList(key, value string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.keyListData[key] = append(s.keyListData[key], value)
 }
 
 func (s *Storage) Delete(key string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.data, key)
+	delete(s.keyValueData, key)
 }

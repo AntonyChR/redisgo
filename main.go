@@ -30,6 +30,7 @@ func main() {
 	handlers["echo"] = &command.EchoHandler{Parser: p}
 	handlers["get"] = &command.GetHandler{Storage: storage, Parser: p}
 	handlers["set"] = &command.SetHandler{Storage: storage, ReplicaChan: replicaChan}
+	handlers["rpush"] = &command.RPush{Storage: storage}
 
 	server, _ := network.CreateNewServer(*SERVER_PORT, "master", "")
 

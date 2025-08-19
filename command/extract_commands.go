@@ -45,6 +45,14 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 
 			commands = append(commands, Cmd{Name: protocol.SET, Args: args})
 			i += len(args) - 1
+
+		case protocol.RPUSH:
+			if i + 2 >= len(parsedData){
+				return nil, fmt.Errorf("ERR wrong number of arguments for 'rpush' command")
+			}
+			args := []string{parsedData[i+1], parsedData[i+2]}
+			commands = append(commands, Cmd{Name: protocol.RPUSH, Args: args})
+			i += len(args) -1
 		case protocol.INFO:
 			if i+1 >= len(parsedData) {
 				return nil, fmt.Errorf("ERR wrong number of arguments for 'info' command")

@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"redisgo/protocol"
 	storage "redisgo/storage"
@@ -90,6 +91,27 @@ func (s *SetHandler) Execute(args []string, ctx *context.Context, conn net.Conn)
 	_, err := conn.Write(okResponse())
 	return err
 }
+
+type RPush struct{
+	Storage *storage.Storage
+}
+
+
+func (s *RPush) Execute(args []string, ctx *context.Context, conn net.Conn) error {
+	if len(args[0]) == 0 {
+		conn.Write([]byte("-ERR invalid key value\r\n"))
+		return fmt.Errorf("empty key value")
+	}
+
+	if len(args) != 2 {
+		conn.Write([]byte("-ERR invalid number of args\r\n"))
+		return fmt.Errorf("invalid number of args")
+	}
+	s.Storage.SetValueToList(args[0], args[1])
+	_, err := conn.Write(okResponse())
+	return err
+}
+
 
 type PSync struct {
 }

@@ -9,6 +9,7 @@ import (
 const (
 	GET        = "get"
 	SET        = "set"
+	RPUSH      = "rpush"
 	INFO       = "info"
 	PING       = "ping"
 	ECHO       = "echo"
