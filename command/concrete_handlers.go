@@ -6,6 +6,9 @@ import (
 	"net"
 	"redisgo/protocol"
 	storage "redisgo/storage"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // PING
@@ -17,13 +20,15 @@ func (p *PingHandler) Execute(args []string, ctx *context.Context, conn net.Conn
 }
 
 // ECHO
-type EchoHandler struct{}
+type EchoHandler struct{
+	Parser protocol.Parser
+}
 
 func (e *EchoHandler) Execute(args []string, ctx *context.Context, conn net.Conn) error {
 	if len(args) == 0 {
 		return errors.New("ECHO command requires an argument")
 	}
-	_, err := conn.Write([]byte(args[0]))
+	_, err := conn.Write([]byte(e.Parser.EncodeBulkString(args[0], true)))
 	return err
 }
 
@@ -55,8 +60,33 @@ func (s *SetHandler) Execute(args []string, ctx *context.Context, conn net.Conn)
 		_, err := conn.Write([]byte("-ERR invalid key value\r\n"))
 		return err
 	}
-	s.Storage.Set(args[0], args[1])
-	// TODO: implement expiration logic
+	key := args[0]
+	value := args[1]
+	s.Storage.Set(key, value)
+	if len(args) == 4 {
+		var expTime time.Duration
+		if strings.ToLower(args[2]) == protocol.PX {
+			t, err := strconv.Atoi(args[3])
+			if err != nil {
+				return errors.New("invalid expire time")
+			}
+			expTime = time.Duration(t) * time.Millisecond
+		}
+
+		if strings.ToLower(args[2]) == protocol.EX {
+			t, err := strconv.Atoi(args[3])
+			if err != nil {
+				return errors.New("invalid expire time")
+			}
+			expTime = time.Duration(t) * time.Second
+		}
+
+		go func() {
+			time.Sleep(expTime)
+			s.Storage.Delete(key)
+		}()
+	}
+
 	_, err := conn.Write(okResponse())
 	return err
 }

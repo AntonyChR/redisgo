@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"flag"
-	"redisgo/command"
+	command "redisgo/command"
 	network "redisgo/network"
-
+	utils "redisgo/utils"
 	protocol "redisgo/protocol"
 	redis "redisgo/redis"
 	storage "redisgo/storage"
@@ -27,16 +27,23 @@ func main() {
 
 	handlers := make(map[string]command.CommandHandler)
 	handlers["ping"] = &command.PingHandler{}
-	handlers["echo"] = &command.EchoHandler{}
+	handlers["echo"] = &command.EchoHandler{Parser: p}
 	handlers["get"] = &command.GetHandler{Storage: storage, Parser: p}
 	handlers["set"] = &command.SetHandler{Storage: storage, ReplicaChan: replicaChan}
 
-	server, _ := network.CreateNewServer("3000", "master", "")
+	server, _ := network.CreateNewServer(*SERVER_PORT, "master", "")
+
+	instanceInfo := redis.InstanceInfo{
+		Port: *SERVER_PORT,
+		Id: utils.GenerateUUID(),
+		Offset: 0, 
+	}
 
 	redis := redis.Redis{
 		Server:   server,
 		Handlers: handlers,
 		Parser:   p,
+		Info:     &instanceInfo,
 		Ctx:      ctx,
 	}
 
