@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"redisgo/protocol"
+	protocol "redisgo/protocol"
 	storage "redisgo/storage"
 	"strconv"
 	"strings"
@@ -21,7 +21,7 @@ func (p *PingHandler) Execute(args []string, ctx *context.Context, conn net.Conn
 }
 
 // ECHO
-type EchoHandler struct{
+type EchoHandler struct {
 	Parser protocol.Parser
 }
 
@@ -92,10 +92,9 @@ func (s *SetHandler) Execute(args []string, ctx *context.Context, conn net.Conn)
 	return err
 }
 
-type RPush struct{
+type RPush struct {
 	Storage *storage.Storage
 }
-
 
 func (s *RPush) Execute(args []string, ctx *context.Context, conn net.Conn) error {
 	if len(args[0]) == 0 {
@@ -107,11 +106,11 @@ func (s *RPush) Execute(args []string, ctx *context.Context, conn net.Conn) erro
 		conn.Write([]byte("-ERR invalid number of args\r\n"))
 		return fmt.Errorf("invalid number of args")
 	}
-	s.Storage.SetValueToList(args[0], args[1])
-	_, err := conn.Write(okResponse())
+	n := s.Storage.SetValueToList(args[0], args[1])
+	resp := fmt.Sprintf(":%d\r\n", n)
+	_, err := conn.Write([]byte(resp))
 	return err
 }
-
 
 type PSync struct {
 }
