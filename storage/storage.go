@@ -38,12 +38,21 @@ func (s *Storage) Set(key, value string) {
 	s.keyValueData[key] = value
 }
 
-func (s *Storage) SetValueToList(key string, values ...string) int {
+func (s *Storage) AppendValuesToList(key string, values ...string) int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.keyListData[key] = append(s.keyListData[key], values...)
 	return len(s.keyListData[key])
 }
+
+
+func (s *Storage) PrependValuesToList(key string, values ...string) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.keyListData[key] = append(values, s.keyListData[key]...)
+	return len(s.keyListData[key])
+}
+
 
 func (s *Storage) GetSliceFromList(key string, start, stop int) []string {
 	s.mu.RLock()
