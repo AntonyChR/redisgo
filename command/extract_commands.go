@@ -50,6 +50,10 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 			args := parsedData[i+1:]
 			commands = append(commands, Cmd{Name: protocol.RPUSH, Args: args})
 			i = len(parsedData)-1
+		case protocol.LPUSH:
+			args := parsedData[i+1:]
+			commands = append(commands, Cmd{Name: protocol.LPUSH, Args: args})
+			i = len(parsedData)-1
 
 		case protocol.LRANGE:
 			args := parsedData[i+1:]

@@ -104,7 +104,7 @@ func (s *RPush) Execute(args []string, ctx *context.Context, conn net.Conn) erro
 
 	key := args[0]
 	values := args[1:]
-	n := s.Storage.SetValueToList(key, values...)
+	n := s.Storage.AppendValuesToList(key, values...)
 	resp := fmt.Sprintf(":%d\r\n", n)
 	_, err := conn.Write([]byte(resp))
 	return err
@@ -121,6 +121,27 @@ func (l *LRange) Execute(args []string, ctx *context.Context, conn net.Conn) err
 	values := l.Storage.GetSliceFromList(args[0],start, stop) 
 	encoded := l.Parser.EncodeAsArray(values)
 	_, err := conn.Write([]byte(encoded))
+	return err
+}
+
+type LPush struct{
+	Storage *storage.Storage
+}
+
+func (l *LPush) Execute(args []string, ctx *context.Context, conn net.Conn) error {
+	if len(args[0]) == 0 {
+		conn.Write([]byte("-ERR invalid key value\r\n"))
+		return fmt.Errorf("empty key value")
+	}
+
+	key := args[0]
+	values := args[1:]
+	for i, j := 0, len(values)-1; i < j; i, j = i+1, j-1 {
+		values[i], values[j] = values[j], values[i]
+	}
+	n := l.Storage.PrependValuesToList(key, values...)
+	resp := fmt.Sprintf(":%d\r\n", n)
+	_, err := conn.Write([]byte(resp))
 	return err
 }
 
