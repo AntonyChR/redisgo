@@ -59,10 +59,10 @@ func (s *Storage) GetSliceFromList(key string, start, end int) []string{
 		}
 
 		if end >= len(list) - 1 {
-			end = len(list)
+			end = len(list) -1
 		}  
 		
-		values = list[start:end]
+		values = list[start:end +1]
 	}
 
 	return values
