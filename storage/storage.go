@@ -1,7 +1,7 @@
 package storage
 
 import (
-"sync"
+	"sync"
 )
 
 func NewStorage() *Storage {
@@ -46,40 +46,31 @@ func (s *Storage) SetValueToList(key string, values ...string) int {
 }
 
 func (s *Storage) GetSliceFromList(key string, start, stop int) []string {
-	values := make([]string, 0)
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	if list, ok := s.keyListData[key]; ok {
-		if start < 0 {
-			if start + len(list) <= 0 {
-				start = 0
-			}else {
-				start = len(list) + start
-				println("start: ", start)
-			}
-		}
-
-	
-		if stop < 0 {
-			stop = len(list) + stop
-		}
-
-		if stop >= len(list) -1 {
-			stop = len(list) - 1
-		}
-
-		if start >= len(list)-1 {
-			return values
-		}
-
-		if start > stop || start < 0{
-			return values
-		}
-
-		values = list[start : stop+1]
+	list, ok := s.keyListData[key]
+	if !ok {
+		return []string{}
 	}
 
-	return values
+	if start < 0 {
+		start += len(list)
+	}
+	if stop < 0 {
+		stop += len(list)
+	}
+
+	start = max(0, start)
+	stop = min(len(list)-1, stop)
+
+	if start > stop || start >= len(list) {
+		return []string{}
+	}
+
+	return list[start : stop+1]
 }
+
 func (s *Storage) Delete(key string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
