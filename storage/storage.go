@@ -1,6 +1,8 @@
 package storage
 
-import "sync"
+import (
+	"sync"
+)
 
 func NewStorage() *Storage {
 	return &Storage{
@@ -36,12 +38,35 @@ func (s *Storage) Set(key, value string) {
 	s.keyValueData[key] = value
 }
 
-func (s *Storage) SetValueToList(key, value string) {
+func (s *Storage) SetValueToList(key string, values ...string) int{
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.keyListData[key] = append(s.keyListData[key], value)
+	s.keyListData[key] = append(s.keyListData[key], values...)
+	return len(s.keyListData[key])
 }
 
+func (s *Storage) GetSliceFromList(key string, start, end int) []string{
+	values := make([]string, 0)
+
+	if list, ok := s.keyListData[key]; ok {
+
+		if start >= len(list) - 1 {
+			return values
+		}
+
+		if start > end {
+			return values
+		}
+
+		if end >= len(list) - 1 {
+			end = len(list)
+		}  
+		
+		values = list[start:end]
+	}
+
+	return values
+}
 func (s *Storage) Delete(key string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

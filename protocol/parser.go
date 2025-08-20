@@ -10,6 +10,7 @@ const (
 	GET        = "get"
 	SET        = "set"
 	RPUSH      = "rpush"
+	LRANGE     = "lrange"
 	INFO       = "info"
 	PING       = "ping"
 	ECHO       = "echo"

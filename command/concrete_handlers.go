@@ -102,13 +102,25 @@ func (s *RPush) Execute(args []string, ctx *context.Context, conn net.Conn) erro
 		return fmt.Errorf("empty key value")
 	}
 
-	if len(args) != 2 {
-		conn.Write([]byte("-ERR invalid number of args\r\n"))
-		return fmt.Errorf("invalid number of args")
-	}
-	n := s.Storage.SetValueToList(args[0], args[1])
+	key := args[0]
+	values := args[1:]
+	n := s.Storage.SetValueToList(key, values...)
 	resp := fmt.Sprintf(":%d\r\n", n)
 	_, err := conn.Write([]byte(resp))
+	return err
+}
+
+type LRange struct {
+	Storage *storage.Storage
+	Parser protocol.Parser
+}
+
+func (l *LRange) Execute(args []string, ctx *context.Context, conn net.Conn) error {
+	start,_ := strconv.Atoi(args[1])
+	stop,_ := strconv.Atoi(args[2])
+	values := l.Storage.GetSliceFromList(args[0],start, stop) 
+	encoded := l.Parser.EncodeAsArray(values)
+	_, err := conn.Write([]byte(encoded))
 	return err
 }
 
