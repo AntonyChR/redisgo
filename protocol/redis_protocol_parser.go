@@ -30,6 +30,9 @@ func (r *RedisProtocolParser) EncodeError(msg string) []byte {
 }
 
 func (r *RedisProtocolParser) EncodeAsArray(data []string) string {
+	if len(data) == 0 {
+		return "*0\r\n"
+	}
 	content := "*" + strconv.Itoa(len(data)) + "\r\n" + "$" + strconv.Itoa(len(data[0])) + "\r\n" + data[0] + "\r\n"
 	for _, arg := range data[1:]{
 		content += "$" + strconv.Itoa(len(arg)) + "\r\n" + arg + "\r\n"
