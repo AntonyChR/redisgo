@@ -29,13 +29,18 @@ func (s *Storage) Get(key string) (value string, exists bool) {
 		return "", false
 	}
 	return value, true
-
 }
 
 func (s *Storage) Set(key, value string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.keyValueData[key] = value
+}
+
+func (s *Storage) DeleteValue(key string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.keyValueData, key)
 }
 
 func (s *Storage) AppendValuesToList(key string, values ...string) int {
@@ -45,14 +50,12 @@ func (s *Storage) AppendValuesToList(key string, values ...string) int {
 	return len(s.keyListData[key])
 }
 
-
 func (s *Storage) PrependValuesToList(key string, values ...string) int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.keyListData[key] = append(values, s.keyListData[key]...)
 	return len(s.keyListData[key])
 }
-
 
 func (s *Storage) GetSliceFromList(key string, start, stop int) []string {
 	s.mu.RLock()
@@ -80,8 +83,25 @@ func (s *Storage) GetSliceFromList(key string, start, stop int) []string {
 	return list[start : stop+1]
 }
 
-func (s *Storage) Delete(key string) {
+func (s *Storage) GetListLenght(key string) int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if list, ok := s.keyListData[key]; ok {
+		return len(list)
+	}
+	return 0
+}
+
+func (s *Storage) RemoveElementFromListByIndex(key string, index int) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.keyValueData, key)
+
+	list, ok := s.keyListData[key]
+	if !ok {
+		return ""
+	}
+	value := list[index]
+
+	s.keyListData[key] =append(list[:index], list[index+1:]...)
+	return value
 }

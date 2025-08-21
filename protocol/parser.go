@@ -12,6 +12,8 @@ const (
 	RPUSH      = "rpush"
 	LPUSH      = "lpush"
 	LRANGE     = "lrange"
+	LLEN       = "llen"
+	LPOP        = "lpop"
 	INFO       = "info"
 	PING       = "ping"
 	ECHO       = "echo"

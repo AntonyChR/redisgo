@@ -84,7 +84,7 @@ func (s *SetHandler) Execute(args []string, ctx *context.Context, conn net.Conn)
 
 		go func() {
 			time.Sleep(expTime)
-			s.Storage.Delete(key)
+			s.Storage.DeleteValue(key)
 		}()
 	}
 
@@ -112,19 +112,19 @@ func (s *RPush) Execute(args []string, ctx *context.Context, conn net.Conn) erro
 
 type LRange struct {
 	Storage *storage.Storage
-	Parser protocol.Parser
+	Parser  protocol.Parser
 }
 
 func (l *LRange) Execute(args []string, ctx *context.Context, conn net.Conn) error {
-	start,_ := strconv.Atoi(args[1])
-	stop,_ := strconv.Atoi(args[2])
-	values := l.Storage.GetSliceFromList(args[0],start, stop) 
+	start, _ := strconv.Atoi(args[1])
+	stop, _ := strconv.Atoi(args[2])
+	values := l.Storage.GetSliceFromList(args[0], start, stop)
 	encoded := l.Parser.EncodeAsArray(values)
 	_, err := conn.Write([]byte(encoded))
 	return err
 }
 
-type LPush struct{
+type LPush struct {
 	Storage *storage.Storage
 }
 
@@ -143,6 +143,31 @@ func (l *LPush) Execute(args []string, ctx *context.Context, conn net.Conn) erro
 	resp := fmt.Sprintf(":%d\r\n", n)
 	_, err := conn.Write([]byte(resp))
 	return err
+}
+
+type LLEN struct {
+	Storage *storage.Storage
+}
+
+func (l *LLEN) Execute(args []string, ctx *context.Context, conn net.Conn) error {
+	n := l.Storage.GetListLenght(args[0])
+	resp := fmt.Sprintf(":%d\r\n", n)
+	_, err := conn.Write([]byte(resp))
+	return err
+
+}
+
+type LPOP struct {
+	Storage *storage.Storage
+	Parser  protocol.Parser
+}
+
+func (l *LPOP) Execute(args []string, ctx *context.Context, conn net.Conn) error {
+	v := l.Storage.RemoveElementFromListByIndex(args[0], 0)
+	resp := l.Parser.EncodeBulkString(v, true)
+	_, err := conn.Write([]byte(resp))
+	return err
+
 }
 
 type PSync struct {

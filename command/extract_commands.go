@@ -13,6 +13,10 @@ type Cmd struct {
 
 func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 	commands := make([]Cmd, 0)
+
+	// The for loop adds 1 to i for each command, so if the command takes 2 arguments, 
+	// i will be incremented by 2, then the next command will start at i+2 (added by us 1) + 1 (added by the for loop) 
+	// so the next command will start at i+3 to skip the arguments of the previous command
 	for i := 0; i < len(parsedData); i++ {
 		switch strings.ToLower(parsedData[i]) {
 		case protocol.PING:
@@ -22,6 +26,7 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 				return nil, fmt.Errorf("ERR wrong number of arguments for 'echo' command")
 			}
 			commands = append(commands, Cmd{Name: protocol.ECHO, Args: []string{parsedData[i+1]}})
+			i++
 		case protocol.GET:
 			if i+1 >= len(parsedData) {
 				return nil, fmt.Errorf("ERR wrong number of arguments for 'get' command")
@@ -49,16 +54,25 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 		case protocol.RPUSH:
 			args := parsedData[i+1:]
 			commands = append(commands, Cmd{Name: protocol.RPUSH, Args: args})
-			i = len(parsedData)-1
+			i = len(parsedData) - 1
+
 		case protocol.LPUSH:
 			args := parsedData[i+1:]
 			commands = append(commands, Cmd{Name: protocol.LPUSH, Args: args})
-			i = len(parsedData)-1
+			i = len(parsedData) - 1
 
 		case protocol.LRANGE:
 			args := parsedData[i+1:]
 			commands = append(commands, Cmd{Name: protocol.LRANGE, Args: args})
-			i = len(parsedData)-1
+			i = len(parsedData) - 1
+
+		case protocol.LLEN:
+			commands = append(commands, Cmd{Name: protocol.LLEN, Args: []string{parsedData[i+1]}})
+			i++
+
+		case protocol.LPOP:
+			commands = append(commands, Cmd{Name: protocol.LPOP, Args: []string{parsedData[i+1]}})
+			i++
 
 		case protocol.INFO:
 			if i+1 >= len(parsedData) {
@@ -66,24 +80,28 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 			}
 			commands = append(commands, Cmd{Name: protocol.INFO, Args: []string{parsedData[i+1]}})
 			i++
+
 		case protocol.REPLCONF:
 			if i+2 >= len(parsedData) {
 				return nil, fmt.Errorf("ERR wrong number of arguments for 'replconf' command")
 			}
 			commands = append(commands, Cmd{Name: protocol.REPLCONF, Args: []string{parsedData[i+1], parsedData[i+2]}})
 			i += 2
+
 		case protocol.FULLRESYNC:
 			if i+2 >= len(parsedData) {
 				return nil, fmt.Errorf("ERR wrong number of arguments for 'fullresync' command")
 			}
 			commands = append(commands, Cmd{Name: protocol.FULLRESYNC, Args: []string{parsedData[i+1], parsedData[i+2]}})
 			i += 2
+
 		case protocol.PSYNC:
 			if i+1 >= len(parsedData) {
 				return nil, fmt.Errorf("ERR wrong number of arguments for 'psync' command")
 			}
 			commands = append(commands, Cmd{Name: protocol.PSYNC, Args: []string{parsedData[i+1]}})
 			i++
+
 		case protocol.WAIT:
 			if i+2 >= len(parsedData) {
 				return nil, fmt.Errorf("ERR wrong number of arguments for 'wait' command")
