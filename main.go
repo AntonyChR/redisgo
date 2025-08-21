@@ -33,6 +33,8 @@ func main() {
 	handlers["rpush"] = &command.RPush{Storage: storage}
 	handlers["lrange"] = &command.LRange{Storage: storage, Parser: p}
 	handlers["lpush"] = &command.LPush{Storage: storage}
+	handlers["llen"] = &command.LLEN{Storage: storage}
+	handlers["lpop"] = &command.LPOP{Storage: storage, Parser: p}
 
 	server, _ := network.CreateNewServer(*SERVER_PORT, "master", "")
 
