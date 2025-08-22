@@ -11,6 +11,7 @@ import (
 )
 
 type Redis struct {
+	Info 	 *InstanceInfo
 	Server   *network.TcpServer
 	Parser   protocol.Parser
 	Handlers map[string]command.CommandHandler
@@ -18,12 +19,10 @@ type Redis struct {
 }
 
 func (r *Redis) Start() {
-	println("REDIS 1.0\nport: 3000\n")
 	r.Server.Start(r.handleConnection)
 }
 
 func (r *Redis) handleConnection(conn net.Conn) {
-	log.Printf("New connection from %s\n", conn.RemoteAddr().String())
 	buff := make([]byte, 1024)
 	defer conn.Close()
 	for {
@@ -31,7 +30,6 @@ func (r *Redis) handleConnection(conn net.Conn) {
 
 		if err != nil {
 			if err == io.EOF {
-				log.Println("connection closed", err)
 				return
 			}
 			log.Println("error reading data, ", err)
