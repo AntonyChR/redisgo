@@ -19,6 +19,7 @@ type Storage struct {
 	mu                    sync.RWMutex
 	keyValueData          map[string]string
 	keyListData           map[string][]string
+	typesMap              map[string]string
 	enabledRegisterOffset bool
 	registerOffset        int
 	waiters               map[string][]chan string
@@ -181,6 +182,14 @@ func (s *Storage) RemoveElementsFromListByRange(key string, start, stop int) []s
 	}
 	
 	return removedElements
+}
+
+func (s *Storage) CheckType(key string) string {
+	if _, ok := s.keyValueData[key]; ok {
+		return "string"
+	}
+
+	return "none"
 }
 
 func nomralizeListIndexes(start, stop, listLength int) (int, int, error) {
