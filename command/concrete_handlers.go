@@ -241,6 +241,21 @@ func (b *BLPOP) Execute(args []string, ctx *context.Context, conn net.Conn) erro
 	}
 }
 
+// TYPE
+
+type Type struct {
+	Storage *storage.Storage
+	Parser  protocol.Parser
+}
+
+
+func (t *Type) Execute(args []string, ctx *context.Context, conn net.Conn) error {
+	valueType := t.Storage.CheckType(args[0])
+	resp := []byte(t.Parser.EncodeAsSimpleString(valueType, true))
+	_, err := conn.Write(resp)
+	return err
+}
+
 type PSync struct {
 }
 

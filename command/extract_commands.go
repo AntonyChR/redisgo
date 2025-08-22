@@ -96,6 +96,14 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 			}
 			commands = append(commands, Cmd{Name: protocol.BLPOP, Args: args})
 
+		case protocol.TYPE:
+			if !checkArrayLen(i, len(parsedData), 1){
+				continue
+			}
+
+			commands = append(commands, Cmd{Name: protocol.TYPE, Args: []string{parsedData[i+1]}})
+			i++
+
 		case protocol.INFO:
 			if i+1 >= len(parsedData) {
 				return nil, fmt.Errorf("ERR wrong number of arguments for 'info' command")

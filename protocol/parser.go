@@ -15,6 +15,7 @@ const (
 	LLEN       = "llen"
 	LPOP       = "lpop"
 	BLPOP      = "blpop"
+	TYPE       = "type"
 	INFO       = "info"
 	PING       = "ping"
 	ECHO       = "echo"
