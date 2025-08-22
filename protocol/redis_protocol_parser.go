@@ -25,6 +25,14 @@ func (p *RedisProtocolParser) EncodeBulkString(data string, addEnd bool) string 
 	return content
 }
 
+func (r *RedisProtocolParser) EncodeAsSimpleString(msg string, addEnd bool) string {
+	content := "+" + msg
+	if addEnd {
+		content += "\r\n"
+	}
+	return content
+}
+
 func (r *RedisProtocolParser) EncodeError(msg string) []byte {
 	return []byte("-ERR " + msg + ENDL)
 }
