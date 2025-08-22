@@ -71,8 +71,30 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 			i++
 
 		case protocol.LPOP:
-			commands = append(commands, Cmd{Name: protocol.LPOP, Args: []string{parsedData[i+1]}})
-			i++
+			args := []string{parsedData[i+1]}
+
+			if checkArrayLen(i, len(parsedData), 2) {
+				if isNumber(parsedData[i+2]){
+					args = append(args, parsedData[i+2])
+					i+=2
+				}else{
+					i++
+				}
+			}
+			commands = append(commands, Cmd{Name: protocol.LPOP, Args: args})
+
+		case protocol.BLPOP:
+			args := []string{parsedData[i+1]}
+
+			if checkArrayLen(i, len(parsedData), 2) {
+				if isNumber(parsedData[i+2]){
+					args = append(args, parsedData[i+2])
+					i+=2
+				}else{
+					i++
+				}
+			}
+			commands = append(commands, Cmd{Name: protocol.BLPOP, Args: args})
 
 		case protocol.INFO:
 			if i+1 >= len(parsedData) {
@@ -111,4 +133,29 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 		}
 	}
 	return commands, nil
+}
+
+func checkArrayLen(currentIndex, arrayLen, requiredArgs int) bool {
+	if currentIndex + requiredArgs >= arrayLen {
+		return false
+	}
+	return true
+}
+
+func isNumber(s string) bool{
+	if len(s) == 0 {
+		return false
+	}
+
+	for _,c := range s {
+
+		if c == '.'{
+			continue
+		}
+
+		if c < '0' || c > '9' {
+            return false
+        }
+	}
+	return true
 }

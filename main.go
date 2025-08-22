@@ -26,15 +26,16 @@ func main() {
 	replicaChan := make(chan []byte)
 
 	handlers := make(map[string]command.CommandHandler)
-	handlers["ping"] = &command.PingHandler{}
-	handlers["echo"] = &command.EchoHandler{Parser: p}
-	handlers["get"] = &command.GetHandler{Storage: storage, Parser: p}
-	handlers["set"] = &command.SetHandler{Storage: storage, ReplicaChan: replicaChan}
-	handlers["rpush"] = &command.RPush{Storage: storage}
-	handlers["lrange"] = &command.LRange{Storage: storage, Parser: p}
-	handlers["lpush"] = &command.LPush{Storage: storage}
-	handlers["llen"] = &command.LLEN{Storage: storage}
-	handlers["lpop"] = &command.LPOP{Storage: storage, Parser: p}
+	handlers[protocol.PING] = &command.PingHandler{}
+	handlers[protocol.ECHO] = &command.EchoHandler{Parser: p}
+	handlers[protocol.GET] = &command.GetHandler{Storage: storage, Parser: p}
+	handlers[protocol.SET] = &command.SetHandler{Storage: storage, ReplicaChan: replicaChan}
+	handlers[protocol.RPUSH] = &command.RPush{Storage: storage}
+	handlers[protocol.LRANGE] = &command.LRange{Storage: storage, Parser: p}
+	handlers[protocol.LPUSH] = &command.LPush{Storage: storage}
+	handlers[protocol.LLEN] = &command.LLEN{Storage: storage}
+	handlers[protocol.LPOP] = &command.LPOP{Storage: storage, Parser: p}
+	handlers[protocol.BLPOP] = &command.BLPOP{Storage: storage, Parser: p}
 
 	server, _ := network.CreateNewServer(*SERVER_PORT, "master", "")
 
