@@ -1,6 +1,5 @@
 package protocol
 
-
 import (
 	"strconv"
 )
@@ -47,6 +46,23 @@ func (r *RedisProtocolParser) EncodeAsArray(data []string) string {
 	}
 
 	return content
+}
+
+func (r *RedisProtocolParser) ConcatenateArray(data []string) string {
+	content := "*"+strconv.Itoa(len(data)) + "\r\n"
+	for _, arr := range data {
+		content += arr
+	}
+	return content
+}
+func (r *RedisProtocolParser) MapToArray(data map[string]string) string {
+	content := "*"+strconv.Itoa(len(data)*2) + "\r\n"
+	for key, value := range data{
+		s1 := r.EncodeBulkString(key, true)
+		s2 := r.EncodeBulkString(value, true)
+		content  = content + s1 + s2
+	}
+	return content 
 }
 
 func (r *RedisProtocolParser) NullBulkString() []byte {

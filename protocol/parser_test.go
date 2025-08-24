@@ -130,3 +130,20 @@ func TestEncodeData(t *testing.T) {
 		}
 	}
 }
+
+func TestEncodeMapToArray(t *testing.T){
+	input := map[string]string{
+		"temperature": "36",
+		"humidity": "95",
+	}
+
+	expect := "*4\r\n$11\r\ntemperature\r\n$2\r\n36\r\n$8\r\nhumidity\r\n$2\r\n95\r\n"
+
+	parser := RedisProtocolParser{}
+
+	res := parser.MapToArray(input)
+
+	if res != expect {
+		t.Errorf("error parsing map, got\n%s, expect\n%s", res, expect)
+	}
+}
