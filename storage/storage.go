@@ -9,17 +9,23 @@ func NewStorage() *Storage {
 	return &Storage{
 		keyValueData:          make(map[string]string),
 		keyListData:           make(map[string][]string),
+		streamData: 		   make(map[string][]Stream),
 		enabledRegisterOffset: false,
 		registerOffset:        0,
-		waiters: make(map[string][]chan string),
+		waiters: 			   make(map[string][]chan string),
 	}
 }
 
+type Stream map[string]string
+
 type Storage struct {
 	mu                    sync.RWMutex
+
+	//data
 	keyValueData          map[string]string
 	keyListData           map[string][]string
-	typesMap              map[string]string
+	streamData            map[string][]Stream
+
 	enabledRegisterOffset bool
 	registerOffset        int
 	waiters               map[string][]chan string
@@ -184,9 +190,41 @@ func (s *Storage) RemoveElementsFromListByRange(key string, start, stop int) []s
 	return removedElements
 }
 
+// streamData methods
+func (s *Storage) GetLastEntryStream(key string) (entry map[string]string, listLen int){
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	l, ok := s.streamData[key]
+	if !ok {
+		return nil, 0
+	}
+	entry = l[len(l) - 1]
+	return entry, len(l)
+}
+
+func (s *Storage) AddEntryStream(key string, data map[string]string) error{
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, ok := s.streamData[key]; 
+	if !ok {
+		s.streamData[key] = []Stream{data}
+		return nil
+	}
+
+	s.streamData[key] = append(s.streamData[key], data)	
+	return nil
+}
+
 func (s *Storage) CheckType(key string) string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	
 	if _, ok := s.keyValueData[key]; ok {
 		return "string"
+	}
+
+	if _, ok := s.streamData[key]; ok {
+		return "stream"
 	}
 
 	return "none"
