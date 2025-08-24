@@ -282,9 +282,10 @@ func (x *XAdd) Execute(args []string, ctx *context.Context, conn net.Conn) error
 		lastEntryId = lastEntry["id"]
 	}
 
-
 	switch validateEntryIdFormat(newEntryId){
 	case FULLY_AUTO_GENERATED_ID:
+		timestamp := time.Now().UnixMilli()
+		newEntryId = fmt.Sprintf("%d-0", timestamp)
 	case PARTIALLY_AUTO_GENERATED_ID:
 		newTimestampStr := strings.Split(newEntryId, "-")[0]
 		newTimestamp,_ := strconv.Atoi(newTimestampStr)
