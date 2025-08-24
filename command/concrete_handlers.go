@@ -7,6 +7,7 @@ import (
 	"net"
 	protocol "redisgo/protocol"
 	storage "redisgo/storage"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -254,6 +255,154 @@ func (t *Type) Execute(args []string, ctx *context.Context, conn net.Conn) error
 	resp := []byte(t.Parser.EncodeAsSimpleString(valueType, true))
 	_, err := conn.Write(resp)
 	return err
+}
+
+// XADD
+
+type XAdd struct {
+	Storage *storage.Storage
+	Parser protocol.Parser
+}
+
+const (
+	FULLY_AUTO_GENERATED_ID = iota
+	PARTIALLY_AUTO_GENERATED_ID
+	EXPLICIT_ID
+	ZEROS_ID
+	INVALID_ID
+)
+
+func (x *XAdd) Execute(args []string, ctx *context.Context, conn net.Conn) error {
+	key := args[0]
+	newEntryId := args[1]
+
+	lastEntry,listLen := x.Storage.GetLastEntryStream(key)
+	lastEntryId := "0-0"
+	if lastEntry != nil {
+		lastEntryId = lastEntry["id"]
+	}
+
+
+	switch validateEntryIdFormat(newEntryId){
+	case FULLY_AUTO_GENERATED_ID:
+	case PARTIALLY_AUTO_GENERATED_ID:
+		newTimestampStr := strings.Split(newEntryId, "-")[0]
+		newTimestamp,_ := strconv.Atoi(newTimestampStr)
+		lastTimestamp, lastIndex := parseEntryId(lastEntryId)
+
+		if !(newTimestamp >= lastTimestamp){
+			resp := x.Parser.EncodeError("The ID specified in XADD is equal or smaller than the target stream top item")
+			_, err := conn.Write([]byte(resp))
+			return err
+		}
+		if lastTimestamp == newTimestamp {
+			lastIndex++
+			newEntryId = fmt.Sprintf("%d-%d",newTimestamp,lastIndex)
+		}else{
+			newEntryId = fmt.Sprintf("%d-%d",newTimestamp,0)
+		}
+
+	case EXPLICIT_ID:
+		if err := checkEntryStreamId(newEntryId, lastEntryId, listLen); err != nil {
+			resp := x.Parser.EncodeError(err.Error())
+			_, err := conn.Write([]byte(resp))
+			return err
+		}
+	case ZEROS_ID:
+		resp := x.Parser.EncodeError("The ID specified in XADD must be greater than 0-0")
+		_, err := conn.Write([]byte(resp))
+		return err
+	case INVALID_ID:
+		resp := x.Parser.EncodeError("Invalid id format")
+		_, err := conn.Write([]byte(resp))
+		return err
+	}
+
+
+
+	keyValues := args[2:]
+
+	if len(keyValues) % 2 != 0 {
+		resp := x.Parser.EncodeError("Invalid number of arguments")
+		_, err := conn.Write([]byte(resp))
+		return err
+	}
+
+	data := map[string]string{
+		"id": newEntryId,
+	}
+	for i := 0; i < len(keyValues); i+=2 {
+		data[keyValues[i]] = keyValues[i+1]
+	}
+
+	if err := x.Storage.AddEntryStream(key,data); err != nil {
+		resp := x.Parser.EncodeError("server error")
+		_, err := conn.Write([]byte(resp))
+		return err
+	}
+
+	resp := x.Parser.EncodeBulkString(newEntryId, true)
+	_, err := conn.Write([]byte(resp))
+	return err
+}
+
+func parseEntryId(id string) (int, int){
+	s := strings.Split(id, "-")
+	timeStamp,_ := strconv.Atoi(s[0]) 
+	index ,_ := strconv.Atoi(s[1]) 
+	return timeStamp, index
+}
+
+func validateEntryIdFormat(id string) int{
+	if id == "*" {
+		return FULLY_AUTO_GENERATED_ID
+	}
+    p2:= `^\d+\-\*$`
+	if matched, _:= regexp.MatchString(p2, id); matched  {
+		return PARTIALLY_AUTO_GENERATED_ID 
+	}
+
+    p3:= `^\d+\-\d+$`
+	if matched, _:= regexp.MatchString(p3, id); matched  {
+
+		return EXPLICIT_ID
+    }
+
+	if id == "0-0"{
+		return ZEROS_ID
+	}
+
+	return INVALID_ID
+}
+
+func checkEntryStreamId(newId, lastId string, listLen int) error{
+	if newId == "0-0"{
+		return errors.New("The ID specified in XADD must be greater than 0-0")
+	}
+	newIdSplitted := strings.Split(newId, "-")
+	lastIdSplitted := strings.Split(lastId, "-")
+
+	newTimestampStr, newIndexStr := newIdSplitted[0], newIdSplitted[1]
+	lastTimestampStr, lastIndexStr := lastIdSplitted[0], lastIdSplitted[1]
+
+	newTimestamp,_ := strconv.Atoi(newTimestampStr)
+	lastTimestamp,_ := strconv.Atoi(lastTimestampStr)
+
+
+	if !(newTimestamp >= lastTimestamp){
+		return errors.New("The ID specified in XADD is equal or smaller than the target stream top item")
+	}
+
+	newIndex,_ := strconv.Atoi(newIndexStr)
+	lastIndex,_ := strconv.Atoi(lastIndexStr)
+
+	if newTimestamp == lastTimestamp {
+		if lastIndex >= newIndex {
+			return errors.New("The ID specified in XADD is equal or smaller than the target stream top item")
+		}
+	}
+
+	return nil 
 }
 
 type PSync struct {

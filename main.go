@@ -37,6 +37,7 @@ func main() {
 	handlers[protocol.LPOP] = &command.LPOP{Storage: storage, Parser: p}
 	handlers[protocol.BLPOP] = &command.BLPOP{Storage: storage, Parser: p}
 	handlers[protocol.TYPE] = &command.Type{Storage: storage, Parser: p}
+	handlers[protocol.XADD] = &command.XAdd{Storage: storage, Parser: p}
 
 	server, _ := network.CreateNewServer(*SERVER_PORT, "master", "")
 
