@@ -15,7 +15,7 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 	commands := make([]Cmd, 0)
 
 	// The for loop adds 1 to i for each command, so if the command takes 2 arguments, 
-	// i will be incremented by 2, then the next command will start at i+2 (added by us 1) + 1 (added by the for loop) 
+	// i will be incremented by 2, then the next command will start at i+2 (added by us) + 1 (added by the for loop) 
 	// so the next command will start at i+3 to skip the arguments of the previous command
 	for i := 0; i < len(parsedData); i++ {
 		switch strings.ToLower(parsedData[i]) {
@@ -108,6 +108,16 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 			args := parsedData[i+1:]
 			commands = append(commands, Cmd{Name: protocol.XADD, Args: args})
 			i = len(parsedData) - 1
+
+		case protocol.XRANGE:
+			if !checkArrayLen(i, len(parsedData), 3){
+				continue
+			}
+
+			args := []string{parsedData[i+1], parsedData[i+2], parsedData[i+3]}
+
+			commands = append(commands, Cmd{Name: protocol.XRANGE, Args: args})
+			i+=3
 
 		case protocol.INFO:
 			if i+1 >= len(parsedData) {

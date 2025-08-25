@@ -17,6 +17,7 @@ const (
 	BLPOP      = "blpop"
 	TYPE       = "type"
 	XADD       = "xadd"
+	XRANGE     = "xrange"
 	INFO       = "info"
 	PING       = "ping"
 	ECHO       = "echo"

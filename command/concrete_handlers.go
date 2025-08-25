@@ -288,7 +288,7 @@ func (x *XAdd) Execute(args []string, ctx *context.Context, conn net.Conn) error
 		newEntryId = fmt.Sprintf("%d-0", timestamp)
 	case PARTIALLY_AUTO_GENERATED_ID:
 		newTimestampStr := strings.Split(newEntryId, "-")[0]
-		newTimestamp,_ := strconv.Atoi(newTimestampStr)
+		newTimestamp,_ := strconv.ParseInt(newTimestampStr, 10, 64)
 		lastTimestamp, lastIndex := parseEntryId(lastEntryId)
 
 		if !(newTimestamp >= lastTimestamp){
@@ -347,9 +347,9 @@ func (x *XAdd) Execute(args []string, ctx *context.Context, conn net.Conn) error
 	return err
 }
 
-func parseEntryId(id string) (int, int){
+func parseEntryId(id string) (int64, int){
 	s := strings.Split(id, "-")
-	timeStamp,_ := strconv.Atoi(s[0]) 
+	timeStamp,_ := strconv.ParseInt(s[0], 10,64) 
 	index ,_ := strconv.Atoi(s[1]) 
 	return timeStamp, index
 }
@@ -404,6 +404,65 @@ func checkEntryStreamId(newId, lastId string, listLen int) error{
 	}
 
 	return nil 
+}
+
+
+// XRANGE
+type XRange struct{
+	Storage *storage.Storage
+	Parser protocol.Parser
+}
+
+func (x *XRange) Execute(args []string, ctx *context.Context, conn net.Conn) error {
+	key := args[0]
+	startStr := args[1]
+	endStr := args[2]
+
+	startTimestamp, startIndex, err := parseId(startStr)
+	if err != nil {
+		_, err := conn.Write([]byte(err.Error()))
+		return err
+	}
+
+	endTimestamp, endIndex, err := parseId(endStr)
+	if err != nil {
+		_, err := conn.Write([]byte(err.Error()))
+		return err
+	}
+
+	data := x.Storage.GetStreamEntriesByRange(key, startTimestamp, endTimestamp, startIndex, endIndex)
+	if len(data)==0{
+		_, err = conn.Write(nilResponse())
+		return err
+	}
+	contentResp := make([]string,0, len(data)) 
+	for _,m:= range data {
+		keyBulkString := x.Parser.EncodeBulkString(m["id"], true)
+		delete(m,"id")
+		mapContent := x.Parser.MapToArray(m)
+		contentResp = append(contentResp, x.Parser.ConcatenateArray([]string{keyBulkString, mapContent}))
+	}
+	 resp := x.Parser.ConcatenateArray(contentResp)
+	 _, err = conn.Write([]byte(resp))
+	return err
+}
+
+func parseId(id string) (int64, int, error) {
+	simpleNumberRegex := regexp.MustCompile(`\d+`)
+	optionalIndexRegex := regexp.MustCompile(`\d+\-\d+`)
+
+	switch {
+	case optionalIndexRegex.MatchString(id):
+		s := strings.Split(id, "-")
+		n1,_ := strconv.ParseInt(s[0], 10, 64)
+		n2,_ := strconv.Atoi(s[1])
+		return n1, n2, nil
+	case simpleNumberRegex.MatchString(id):
+		n,_ := strconv.ParseInt(id, 10, 64)
+		return n,0, nil
+	default:
+		return 0,0, errors.New("invalid id")
+	}
 }
 
 type PSync struct {
