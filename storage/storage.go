@@ -2,21 +2,24 @@ package storage
 
 import (
 	"errors"
+	"strconv"
+	"strings"
 	"sync"
+
+	utils "github.com/AntonyChR/go-utils"
 )
 
 func NewStorage() *Storage {
 	return &Storage{
 		keyValueData:          make(map[string]string),
 		keyListData:           make(map[string][]string),
-		streamData: 		   make(map[string][]Stream),
+		streamData: 		   make(map[string][]map[string]string),
 		enabledRegisterOffset: false,
 		registerOffset:        0,
 		waiters: 			   make(map[string][]chan string),
 	}
 }
 
-type Stream map[string]string
 
 type Storage struct {
 	mu                    sync.RWMutex
@@ -24,7 +27,7 @@ type Storage struct {
 	//data
 	keyValueData          map[string]string
 	keyListData           map[string][]string
-	streamData            map[string][]Stream
+	streamData            map[string][]map[string]string
 
 	enabledRegisterOffset bool
 	registerOffset        int
@@ -207,13 +210,44 @@ func (s *Storage) AddEntryStream(key string, data map[string]string) error{
 	defer s.mu.Unlock()
 	_, ok := s.streamData[key]; 
 	if !ok {
-		s.streamData[key] = []Stream{data}
+		s.streamData[key] = []map[string]string{data}
 		return nil
 	}
 
 	s.streamData[key] = append(s.streamData[key], data)	
 	return nil
 }
+
+func (s *Storage) GetStreamEntriesByRange(key string,startTimestamp, endTimestamp int64, startIndex, endIndex int) []map[string]string{
+	list, ok := s.streamData[key]
+	if !ok {
+		return []map[string]string{}
+	}
+
+	cb := func(s map[string]string)bool{
+		timestamp, index := parseEntryId(s["id"])				
+		if startIndex== 0 && endIndex == 0 {
+			timeStampIsInRange := startTimestamp <= timestamp && timestamp <= endTimestamp
+			return timeStampIsInRange 
+		}
+		indexIsInRange := startIndex <= index && index <= endIndex
+		timeStampIsInRange := startTimestamp <= timestamp && timestamp <= endTimestamp
+		return timeStampIsInRange && indexIsInRange
+	}
+
+	data := utils.FilterPrealloc(list, cb)
+	return data
+}
+
+
+func parseEntryId(id string) (int64, int){
+	s := strings.Split(id, "-")
+	timeStamp,_ := strconv.ParseInt(s[0], 10,64) 
+	index ,_ := strconv.Atoi(s[1]) 
+	return timeStamp, index
+}
+
+
 
 func (s *Storage) CheckType(key string) string {
 	s.mu.RLock()
