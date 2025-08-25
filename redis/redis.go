@@ -11,7 +11,7 @@ import (
 )
 
 type Redis struct {
-	Info 	 *InstanceInfo
+	Info     *InstanceInfo
 	Server   *network.TcpServer
 	Parser   protocol.Parser
 	Handlers map[string]command.CommandHandler
