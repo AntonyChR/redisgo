@@ -460,9 +460,26 @@ func parseId(id string) (int64, int, error) {
 	case simpleNumberRegex.MatchString(id):
 		n,_ := strconv.ParseInt(id, 10, 64)
 		return n,0, nil
+	case id == "-":
+		return 0,0,nil
+	case id == "+":
+		return 0,0,nil
 	default:
 		return 0,0, errors.New("invalid id")
 	}
+}
+
+// XREAD
+
+type XRead struct{
+	Storage *storage.Storage
+	Parser  protocol.Parser
+}
+
+func (x *XRead) Execute(args []string, ctx *context.Context, conn net.Conn) error {
+	return nil
+
+
 }
 
 type PSync struct {

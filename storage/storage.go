@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -219,6 +220,8 @@ func (s *Storage) AddEntryStream(key string, data map[string]string) error{
 }
 
 func (s *Storage) GetStreamEntriesByRange(key string,startTimestamp, endTimestamp int64, startIndex, endIndex int) []map[string]string{
+
+	fmt.Printf("startTimestamp: %d, endTimestamp: %d\nstartIndex: %d, endIndex:%d\n", startTimestamp, endTimestamp, startIndex, endIndex)
 	list, ok := s.streamData[key]
 	if !ok {
 		return []map[string]string{}
@@ -235,8 +238,21 @@ func (s *Storage) GetStreamEntriesByRange(key string,startTimestamp, endTimestam
 		return timeStampIsInRange && indexIsInRange
 	}
 
-	data := utils.FilterPrealloc(list, cb)
-	return data
+	if endTimestamp == 0 && endIndex == 0 {
+		cb =  func(s map[string]string)bool{
+			timestamp, index:= parseEntryId(s["id"])				
+
+			timeStampIsInRange := startTimestamp <= timestamp && timestamp <= endTimestamp
+			indexIsInRange := startIndex <= index 
+			return timeStampIsInRange && indexIsInRange
+		}
+	}
+
+
+	
+	filteredData := utils.FilterPrealloc(list, cb)
+	resp := utils.DeepCopyArrMap(filteredData)
+	return resp
 }
 
 
@@ -246,8 +262,6 @@ func parseEntryId(id string) (int64, int){
 	index ,_ := strconv.Atoi(s[1]) 
 	return timeStamp, index
 }
-
-
 
 func (s *Storage) CheckType(key string) string {
 	s.mu.RLock()

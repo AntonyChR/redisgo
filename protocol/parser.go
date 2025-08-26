@@ -18,6 +18,7 @@ const (
 	TYPE       = "type"
 	XADD       = "xadd"
 	XRANGE     = "xrange"
+	XREAD      = "xread"
 	INFO       = "info"
 	PING       = "ping"
 	ECHO       = "echo"
