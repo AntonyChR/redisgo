@@ -256,6 +256,27 @@ func (s *Storage) GetStreamEntriesByRange(key string,startTimestamp, endTimestam
 }
 
 
+func (s *Storage) GetStreamEntriesByPartialRange(key string,startTimestamp int64, startIndex int) []map[string]string{
+	println("startTimestamp: ", startTimestamp, " startIndex: ", startIndex)
+	
+	list, ok := s.streamData[key]
+	if !ok {
+		return []map[string]string{}
+	}
+
+	cb := func(s map[string]string)bool{
+		timestamp, index := parseEntryId(s["id"])				
+		println("timestamp: ", timestamp, " index: ", index)
+		return startTimestamp < timestamp ||  startIndex < index 
+
+	}
+
+	filteredData := utils.FilterPrealloc(list, cb)
+	resp := utils.DeepCopyArrMap(filteredData)
+	return resp
+}
+
+
 func parseEntryId(id string) (int64, int){
 	s := strings.Split(id, "-")
 	timeStamp,_ := strconv.ParseInt(s[0], 10,64) 

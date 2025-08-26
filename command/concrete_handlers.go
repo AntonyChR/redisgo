@@ -460,9 +460,7 @@ func parseId(id string) (int64, int, error) {
 	case simpleNumberRegex.MatchString(id):
 		n,_ := strconv.ParseInt(id, 10, 64)
 		return n,0, nil
-	case id == "-":
-		return 0,0,nil
-	case id == "+":
+	case id == "-" || id == "+":
 		return 0,0,nil
 	default:
 		return 0,0, errors.New("invalid id")
@@ -477,9 +475,32 @@ type XRead struct{
 }
 
 func (x *XRead) Execute(args []string, ctx *context.Context, conn net.Conn) error {
-	return nil
+	key := args[1]
+	idStr := args[2]
+	timestamp, index := parseEntryId(idStr)
 
+	data := x.Storage.GetStreamEntriesByPartialRange(key, timestamp, index)
+	if len(data) == 0 {
+		_, err := conn.Write(nilResponse())
+		return err
+	}
+	
 
+	encodedStreamsData := make([]string,0, len(data)) 
+	for _,m:= range data {
+		keyBulkString := x.Parser.EncodeBulkString(m["id"], true)
+		delete(m,"id")
+		mapContent := x.Parser.MapToArray(m)
+		encodedStreamsData = append(encodedStreamsData, x.Parser.ConcatenateArray([]string{keyBulkString, mapContent}))
+	}
+
+	streamDataWithKey:= []string{x.Parser.EncodeBulkString(key, true), x.Parser.ConcatenateArray(encodedStreamsData)}
+
+	s := x.Parser.ConcatenateArray(streamDataWithKey)	
+	s = x.Parser.ConcatenateArray([]string{s})	
+
+	_, err := conn.Write([]byte(s))
+	return err
 }
 
 type PSync struct {

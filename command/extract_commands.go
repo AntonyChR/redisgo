@@ -119,6 +119,16 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 			commands = append(commands, Cmd{Name: protocol.XRANGE, Args: args})
 			i+=3
 
+		case protocol.XREAD:
+			if !checkArrayLen(i, len(parsedData), 3){
+				continue
+			}
+
+			args := []string{parsedData[i+1], parsedData[i+2], parsedData[i+3]}
+
+			commands = append(commands, Cmd{Name: protocol.XREAD, Args: args})
+			i+=3
+
 		case protocol.INFO:
 			if i+1 >= len(parsedData) {
 				return nil, fmt.Errorf("ERR wrong number of arguments for 'info' command")
