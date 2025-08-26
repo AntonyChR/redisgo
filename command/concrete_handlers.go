@@ -289,7 +289,7 @@ func (x *XAdd) Execute(args []string, ctx *context.Context, conn net.Conn) error
 	case PARTIALLY_AUTO_GENERATED_ID:
 		newTimestampStr := strings.Split(newEntryId, "-")[0]
 		newTimestamp,_ := strconv.ParseInt(newTimestampStr, 10, 64)
-		lastTimestamp, lastIndex := parseEntryId(lastEntryId)
+		lastTimestamp, lastIndex := parseStreamEntryId(lastEntryId)
 
 		if !(newTimestamp >= lastTimestamp){
 			resp := x.Parser.EncodeError("The ID specified in XADD is equal or smaller than the target stream top item")
@@ -347,7 +347,7 @@ func (x *XAdd) Execute(args []string, ctx *context.Context, conn net.Conn) error
 	return err
 }
 
-func parseEntryId(id string) (int64, int){
+func parseStreamEntryId(id string) (int64, int){
 	s := strings.Split(id, "-")
 	timeStamp,_ := strconv.ParseInt(s[0], 10,64) 
 	index ,_ := strconv.Atoi(s[1]) 
@@ -418,13 +418,13 @@ func (x *XRange) Execute(args []string, ctx *context.Context, conn net.Conn) err
 	startStr := args[1]
 	endStr := args[2]
 
-	startTimestamp, startIndex, err := parseId(startStr)
+	startTimestamp, startIndex, err := parseStreamRangeId(startStr)
 	if err != nil {
 		_, err := conn.Write([]byte(err.Error()))
 		return err
 	}
 
-	endTimestamp, endIndex, err := parseId(endStr)
+	endTimestamp, endIndex, err := parseStreamRangeId(endStr)
 	if err != nil {
 		_, err := conn.Write([]byte(err.Error()))
 		return err
@@ -447,7 +447,7 @@ func (x *XRange) Execute(args []string, ctx *context.Context, conn net.Conn) err
 	return err
 }
 
-func parseId(id string) (int64, int, error) {
+func parseStreamRangeId(id string) (int64, int, error) {
 	simpleNumberRegex := regexp.MustCompile(`\d+`)
 	optionalIndexRegex := regexp.MustCompile(`\d+\-\d+`)
 
@@ -475,30 +475,43 @@ type XRead struct{
 }
 
 func (x *XRead) Execute(args []string, ctx *context.Context, conn net.Conn) error {
-	key := args[1]
-	idStr := args[2]
-	timestamp, index := parseEntryId(idStr)
-
-	data := x.Storage.GetStreamEntriesByPartialRange(key, timestamp, index)
-	if len(data) == 0 {
-		_, err := conn.Write(nilResponse())
+	keysIds := args[1:]
+	if len(keysIds) % 2 != 0 {
+		resp := x.Parser.EncodeError("Invalid number of arguments")
+		_, err := conn.Write(resp)
 		return err
 	}
-	
 
-	encodedStreamsData := make([]string,0, len(data)) 
-	for _,m:= range data {
-		keyBulkString := x.Parser.EncodeBulkString(m["id"], true)
-		delete(m,"id")
-		mapContent := x.Parser.MapToArray(m)
-		encodedStreamsData = append(encodedStreamsData, x.Parser.ConcatenateArray([]string{keyBulkString, mapContent}))
+	keys := keysIds[:len(keysIds) / 2]
+	ids  := keysIds[len(keysIds) / 2:]
+
+	respData := make([]string, len(keys))
+	for i := range len(keys){
+		key := keys[i]
+		idStr := ids[i]
+		timestamp, index := parseStreamEntryId(idStr)
+
+		data := x.Storage.GetStreamEntriesByPartialRange(key, timestamp, index)
+		if len(data) == 0 {
+			_, err := conn.Write(nilResponse())
+			return err
+		}
+
+
+		encodedStreamsData := make([]string,0, len(data)) 
+		for _,m:= range data {
+			keyBulkString := x.Parser.EncodeBulkString(m["id"], true)
+			delete(m,"id")
+			mapContent := x.Parser.MapToArray(m)
+			encodedStreamsData = append(encodedStreamsData, x.Parser.ConcatenateArray([]string{keyBulkString, mapContent}))
+		}
+
+		streamDataWithKey:= []string{x.Parser.EncodeBulkString(key, true), x.Parser.ConcatenateArray(encodedStreamsData)}
+
+		respData[i] = x.Parser.ConcatenateArray(streamDataWithKey)
 	}
 
-	streamDataWithKey:= []string{x.Parser.EncodeBulkString(key, true), x.Parser.ConcatenateArray(encodedStreamsData)}
-
-	s := x.Parser.ConcatenateArray(streamDataWithKey)	
-	s = x.Parser.ConcatenateArray([]string{s})	
-
+	s := x.Parser.ConcatenateArray(respData)	
 	_, err := conn.Write([]byte(s))
 	return err
 }

@@ -120,14 +120,9 @@ func ExtractCommandsFromParsedData(parsedData []string) ([]Cmd, error) {
 			i+=3
 
 		case protocol.XREAD:
-			if !checkArrayLen(i, len(parsedData), 3){
-				continue
-			}
-
-			args := []string{parsedData[i+1], parsedData[i+2], parsedData[i+3]}
-
-			commands = append(commands, Cmd{Name: protocol.XREAD, Args: args})
-			i+=3
+			args := parsedData[i+1:]
+			commands = append(commands, Cmd{Name: protocol.XREAD, Args:args})
+			i += len(args) - 1
 
 		case protocol.INFO:
 			if i+1 >= len(parsedData) {

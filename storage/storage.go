@@ -2,7 +2,6 @@ package storage
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -220,8 +219,9 @@ func (s *Storage) AddEntryStream(key string, data map[string]string) error{
 }
 
 func (s *Storage) GetStreamEntriesByRange(key string,startTimestamp, endTimestamp int64, startIndex, endIndex int) []map[string]string{
-
-	fmt.Printf("startTimestamp: %d, endTimestamp: %d\nstartIndex: %d, endIndex:%d\n", startTimestamp, endTimestamp, startIndex, endIndex)
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	
 	list, ok := s.streamData[key]
 	if !ok {
 		return []map[string]string{}
@@ -247,8 +247,6 @@ func (s *Storage) GetStreamEntriesByRange(key string,startTimestamp, endTimestam
 			return timeStampIsInRange && indexIsInRange
 		}
 	}
-
-
 	
 	filteredData := utils.FilterPrealloc(list, cb)
 	resp := utils.DeepCopyArrMap(filteredData)
@@ -257,8 +255,8 @@ func (s *Storage) GetStreamEntriesByRange(key string,startTimestamp, endTimestam
 
 
 func (s *Storage) GetStreamEntriesByPartialRange(key string,startTimestamp int64, startIndex int) []map[string]string{
-	println("startTimestamp: ", startTimestamp, " startIndex: ", startIndex)
-	
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	list, ok := s.streamData[key]
 	if !ok {
 		return []map[string]string{}
@@ -266,9 +264,7 @@ func (s *Storage) GetStreamEntriesByPartialRange(key string,startTimestamp int64
 
 	cb := func(s map[string]string)bool{
 		timestamp, index := parseEntryId(s["id"])				
-		println("timestamp: ", timestamp, " index: ", index)
 		return startTimestamp < timestamp ||  startIndex < index 
-
 	}
 
 	filteredData := utils.FilterPrealloc(list, cb)
