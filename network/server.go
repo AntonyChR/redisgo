@@ -20,7 +20,7 @@ type Data struct {
 
 func CreateNewServer(port string, role string, masterAddr string) (*TcpServer, error) {
 	if role != SLAVE && role != MASTER {
-		errorMsg := fmt.Sprintf("invalid role option, expected 0(master) or 1(slave) got: %s", role)
+		errorMsg := fmt.Sprintf("invalid role option, expected '%s' or '%s' got: %s", role, MASTER, SLAVE)
 		return nil, errors.New(errorMsg)
 	}
 	if role == SLAVE {
